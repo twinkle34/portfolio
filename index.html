@@ -478,7 +478,7 @@
           <span>Marketing strategy insights</span>
         </div>
         <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/DivvyBikesAnalysis/Story2" data-storypoint="5">
-          <button class="tv-load-btn" onclick="loadViz(this)"><span class="play-circle">▶</span><span class="tv-load-label">Load interactive viz</span><span class="tv-load-sub">Click to explore live in Tableau</span></button>
+          <span class="tv-loading">Loading viz…</span>
         </div>
       </div>
 
@@ -488,7 +488,7 @@
           <a href="https://public.tableau.com/app/profile/twinkle5640/viz/ShipModeAnalysis_16481647993470/Dashboard1" target="_blank">Open ↗</a>
         </div>
         <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/ShipModeAnalysis_16481647993470/Dashboard1">
-          <button class="tv-load-btn" onclick="loadViz(this)"><span class="play-circle">▶</span><span class="tv-load-label">Load interactive viz</span></button>
+          <span class="tv-loading">Loading viz…</span>
         </div>
       </div>
 
@@ -498,7 +498,7 @@
           <a href="https://public.tableau.com/app/profile/twinkle5640/viz/DonationBehaviour/Dashboard1" target="_blank">Open ↗</a>
         </div>
         <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/DonationBehaviour/Dashboard1">
-          <button class="tv-load-btn" onclick="loadViz(this)"><span class="play-circle">▶</span><span class="tv-load-label">Load interactive viz</span></button>
+          <span class="tv-loading">Loading viz…</span>
         </div>
       </div>
 
@@ -508,7 +508,7 @@
           <a href="https://public.tableau.com/app/profile/twinkle5640/viz/InjuryIncidence/Sheet1" target="_blank">Open ↗</a>
         </div>
         <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/InjuryIncidence/Sheet1">
-          <button class="tv-load-btn" onclick="loadViz(this)"><span class="play-circle">▶</span><span class="tv-load-label">Load interactive viz</span></button>
+          <span class="tv-loading">Loading viz…</span>
         </div>
       </div>
 
@@ -518,7 +518,7 @@
           <a href="https://public.tableau.com/app/profile/twinkle5640/viz/CustomerChurnAnalysisDashboard_16457707684690/Dashboard1" target="_blank">Open ↗</a>
         </div>
         <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/CustomerChurnAnalysisDashboard_16457707684690/Dashboard1">
-          <button class="tv-load-btn" onclick="loadViz(this)"><span class="play-circle">▶</span><span class="tv-load-label">Load interactive viz</span></button>
+          <span class="tv-loading">Loading viz…</span>
         </div>
       </div>
 
@@ -601,8 +601,7 @@
     document.getElementById('lightbox').classList.remove('open');
   }
 
-  function loadViz(btn){
-    const wrap = btn.closest('.tv-embed-wrap');
+  function loadViz(wrap){
     const src = wrap.getAttribute('data-src');
     if(!src || wrap.dataset.loaded) return;
     wrap.dataset.loaded = 'true';
@@ -649,6 +648,17 @@
       window.addEventListener('resize', fitToContainer);
     });
   }
+
+  // Auto-load each Tableau viz as it scrolls into view (staggered, not all 5 at once)
+  const tvObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        loadViz(entry.target);
+        tvObserver.unobserve(entry.target);
+      }
+    });
+  }, {rootMargin: '300px'});
+  document.querySelectorAll('.tv-embed-wrap').forEach(w => tvObserver.observe(w));
 </script>
 
 </body>
