@@ -137,8 +137,9 @@
   .tv-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
   .tv-head h4{font-size:1rem;margin:0;}
   .tv-head a{font-size:.78rem;font-weight:700;}
-  .tv-embed-wrap{width:100%;aspect-ratio:16/10;background:#f1f0ed;display:flex;align-items:center;justify-content:center;}
+  .tv-embed-wrap{width:100%;aspect-ratio:16/10;background:#f1f0ed;display:flex;align-items:center;justify-content:center;overflow:auto;}
   .tv-embed-wrap tableau-viz{width:100%;height:100%;}
+  .tv-card.full .tv-embed-wrap{aspect-ratio:unset;height:780px;}
   .tv-loading{color:var(--ink-soft);font-size:.85rem;}
   .tv-load-btn{
     display:flex;flex-direction:column;align-items:center;gap:10px;background:none;border:none;
@@ -476,7 +477,7 @@
           <span>Python (Pandas) preprocessing</span>
           <span>Marketing strategy insights</span>
         </div>
-        <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/DivvyBikesAnalysis/Story2">
+        <div class="tv-embed-wrap" data-src="https://public.tableau.com/views/DivvyBikesAnalysis/Story2" data-storypoint="5">
           <button class="tv-load-btn" onclick="loadViz(this)"><span class="play-circle">▶</span><span class="tv-load-label">Load interactive viz</span><span class="tv-load-sub">Click to explore live in Tableau</span></button>
         </div>
       </div>
@@ -612,6 +613,18 @@
     viz.toggleAttribute('hide-tabs', true);
     wrap.innerHTML = '';
     wrap.appendChild(viz);
+
+    const storyPointIndex = wrap.getAttribute('data-storypoint');
+    if(storyPointIndex !== null){
+      viz.addEventListener('firstinteractive', async () => {
+        try {
+          const sheet = viz.workbook.activeSheet;
+          if(sheet && typeof sheet.setActiveStoryPointIndexAsync === 'function'){
+            await sheet.setActiveStoryPointIndexAsync(parseInt(storyPointIndex, 10));
+          }
+        } catch(e) { /* fall back to default landing page */ }
+      });
+    }
   }
 </script>
 
