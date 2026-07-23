@@ -611,20 +611,43 @@
     viz.setAttribute('src', src);
     viz.setAttribute('toolbar', 'bottom');
     viz.toggleAttribute('hide-tabs', true);
+    viz.style.width = '100%';
+    viz.style.height = '100%';
     wrap.innerHTML = '';
     wrap.appendChild(viz);
 
     const storyPointIndex = wrap.getAttribute('data-storypoint');
-    if(storyPointIndex !== null){
-      viz.addEventListener('firstinteractive', async () => {
-        try {
-          const sheet = viz.workbook.activeSheet;
-          if(sheet && typeof sheet.setActiveStoryPointIndexAsync === 'function'){
-            await sheet.setActiveStoryPointIndexAsync(parseInt(storyPointIndex, 10));
-          }
-        } catch(e) { /* fall back to default landing page */ }
-      });
+
+    function fitToContainer(){
+      try {
+        const sheet = viz.workbook.activeSheet;
+        const info = sheet && sheet.size;
+        const nativeW = info && info.maxSize && info.maxSize.width;
+        const nativeH = info && info.maxSize && info.maxSize.height;
+        if(nativeW && nativeH){
+          const containerW = wrap.clientWidth;
+          const scale = containerW / nativeW;
+          viz.style.width = nativeW + 'px';
+          viz.style.height = nativeH + 'px';
+          viz.style.transform = 'scale(' + scale + ')';
+          viz.style.transformOrigin = 'top left';
+          wrap.style.aspectRatio = 'unset';
+          wrap.style.height = Math.round(nativeH * scale) + 'px';
+          wrap.style.overflow = 'hidden';
+        }
+      } catch(e) { /* keep default responsive sizing */ }
     }
+
+    viz.addEventListener('firstinteractive', async () => {
+      try {
+        const sheet = viz.workbook.activeSheet;
+        if(storyPointIndex !== null && sheet && typeof sheet.setActiveStoryPointIndexAsync === 'function'){
+          await sheet.setActiveStoryPointIndexAsync(parseInt(storyPointIndex, 10));
+        }
+      } catch(e) { /* fall back to default landing page */ }
+      fitToContainer();
+      window.addEventListener('resize', fitToContainer);
+    });
   }
 </script>
 
