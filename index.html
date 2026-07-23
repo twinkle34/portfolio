@@ -137,7 +137,7 @@
   .tv-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
   .tv-head h4{font-size:1rem;margin:0;}
   .tv-head a{font-size:.78rem;font-weight:700;}
-  .tv-embed-wrap{width:100%;aspect-ratio:16/10;background:#f1f0ed;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .tv-embed-wrap{width:100%;aspect-ratio:16/10;background:#f1f0ed;position:relative;overflow:hidden;}
   .tv-embed-wrap tableau-viz{width:100%;height:100%;}
   .tv-card.full .tv-embed-wrap{aspect-ratio:unset;height:720px;}
   .tv-links-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px;}
@@ -605,41 +605,43 @@
     viz.setAttribute('src', src);
     viz.setAttribute('toolbar', 'bottom');
     viz.toggleAttribute('hide-tabs', true);
-    viz.style.width = '100%';
-    viz.style.height = '100%';
+
+    // Render into a generous, larger-than-any-real-viz canvas so nothing gets
+    // internally cropped, then visually scale + center that whole canvas to
+    // exactly fill the card. This does not depend on any Tableau API call.
+    const CANVAS_W = 1400, CANVAS_H = 900;
+    viz.style.position = 'absolute';
+    viz.style.top = '50%';
+    viz.style.left = '50%';
+    viz.style.width = CANVAS_W + 'px';
+    viz.style.height = CANVAS_H + 'px';
+
     wrap.innerHTML = '';
     wrap.appendChild(viz);
 
-    const storyPointIndex = wrap.getAttribute('data-storypoint');
-
-    function fitToContainer(){
-      try {
-        const sheet = viz.workbook.activeSheet;
-        const info = sheet && sheet.size;
-        const nativeW = info && info.maxSize && info.maxSize.width;
-        const nativeH = info && info.maxSize && info.maxSize.height;
-        if(nativeW && nativeH){
-          const containerW = wrap.clientWidth;
-          const containerH = wrap.clientHeight;
-          const scale = Math.min(containerW / nativeW, containerH / nativeH);
-          viz.style.width = nativeW + 'px';
-          viz.style.height = nativeH + 'px';
-          viz.style.transform = 'scale(' + scale + ')';
-          viz.style.transformOrigin = 'center center';
-        }
-      } catch(e) { /* keep default responsive sizing */ }
+    function applyScale(){
+      const containerW = wrap.clientWidth;
+      const containerH = wrap.clientHeight;
+      const scale = Math.min(containerW / CANVAS_W, containerH / CANVAS_H);
+      viz.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
     }
+    applyScale();
+    window.addEventListener('resize', applyScale);
 
-    viz.addEventListener('firstinteractive', async () => {
-      try {
-        const sheet = viz.workbook.activeSheet;
-        if(storyPointIndex !== null && sheet && typeof sheet.setActiveStoryPointIndexAsync === 'function'){
-          await sheet.setActiveStoryPointIndexAsync(parseInt(storyPointIndex, 10));
-        }
-      } catch(e) { /* fall back to default landing page */ }
-      fitToContainer();
-      window.addEventListener('resize', fitToContainer);
-    });
+    const storyPointIndex = wrap.getAttribute('data-storypoint');
+    if(storyPointIndex !== null){
+      const jumpToStoryPoint = async () => {
+        try {
+          const sheet = viz.workbook && viz.workbook.activeSheet;
+          if(sheet && typeof sheet.setActiveStoryPointIndexAsync === 'function'){
+            await sheet.setActiveStoryPointIndexAsync(parseInt(storyPointIndex, 10));
+          }
+        } catch(e) { /* fall back to default landing page */ }
+      };
+      viz.addEventListener('firstinteractive', jumpToStoryPoint);
+      // Retry once more shortly after in case the workbook wasn't ready on first fire
+      setTimeout(jumpToStoryPoint, 2500);
+    }
   }
 
   // Auto-load each Tableau viz as it scrolls into view (staggered, not all 5 at once)
